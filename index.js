@@ -1,11 +1,17 @@
 const express = require("express");
 const cors = require("cors");
+const redis = require("./redisClient");
 
 const app = express();
 const port = 6001;
 
 app.use(cors());
 app.use(express.json());
+
+app.use((req, res, next) => {
+  console.log(`➡️ ${req.method} ${req.url}`);
+  next();
+});
 
 // ❗ ย้ายข้อมูลจาก backend เดิมมาเฉพาะ category
 const menumain = [
@@ -61,17 +67,71 @@ const menudrink = [
   { id: 17, name: 'น้ำผลไม้รวม', price: 45, image: 'https://res.cloudinary.com/dk0z4ums3/image/upload/v1701182614/attached_image_th/colorfulsmoothiehealthydetoxvitamindietorveganfoodconcept.jpg' },
 ];
 
-app.get("/api/categories/main", (req, res) => {
-  res.json(menumain);
+app.get("/api/categories/main", async (req, res) => {
+  console.log("GET /api/categories/main");
+
+  try {
+    const cache = await redis.get("menumain");
+
+    if (cache) {
+      console.log("Redis cache HIT: menumain");
+      return res.json(JSON.parse(cache));
+    }
+
+    console.log("Redis cache MISS: menumain");
+    await redis.set("menumain", JSON.stringify(menumain), "EX", 60);
+
+
+    res.json(menumain);
+  } catch (err) {
+    console.error("Redis error:", err);
+    res.status(500).json({ message: "Redis error" });
+  }
 });
 
-app.get("/api/categories/snack", (req, res) => {
-  res.json(menusnack);
+
+app.get("/api/categories/snack", async (req, res) => {
+  console.log("GET /api/catagories/snack");
+
+  try{
+    const cache = await redis.get("menusnack");
+
+    if(cache) {
+      console.log("Redis cahce HIT: menusnack");
+      return res.json(JSON.parse(cache));
+    }
+
+    console.log("Redis cache MISS: menusnack");
+    await redis.set("menusnack", JSON.stringify(menusnack), "EX", 60);
+
+    
+    res.json(menusnack);
+  } catch (err) {
+    console.log("Redis error:", err);
+    res.status(500).json({ message: "Redis error"});
+  }
 });
 
-app.get("/api/categories/drink", (req, res) => {
-  res.json(menudrink);
+app.get("/api/categories/drink", async (req, res) => {
+  try {
+    const cache = await redis.get("menudrink");
+
+    if (cache) {
+      console.log("Redis cache HIT: menudrink");
+      return res.json(JSON.parse(cache));
+    }
+
+    console.log("Redis cache MISS: menudrink");
+    await redis.set("menudrink", JSON.stringify(menudrink), "EX", 60);
+
+    
+    res.json(menudrink);
+  } catch (err) {
+    console.error("Redis error:", err);
+    res.status(500).json({ message: "Redis error" });
+  }
 });
+
 
 app.get("/health", (req, res) => {
   res.json({ status: "OK", service: "category" });

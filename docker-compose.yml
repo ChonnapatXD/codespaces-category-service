@@ -1,0 +1,16 @@
+services:
+  redis:
+    image: redis:7
+    container_name: redis
+    # ❌ ไม่ต้องมี ports
+
+  categories-service:
+    build: .
+    container_name: categories-service
+    ports:
+      - "6001:6001"
+    depends_on:
+      - redis
+    environment:
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
