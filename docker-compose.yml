@@ -2,12 +2,13 @@ services:
   redis:
     image: redis:7
     container_name: redis
-    command: >
+    command: > 
       redis-server 
-      --requirepass mypassword 
-      --user default
-    # ❌ ไม่ต้องมี ports
-
+      --default off 
+      --user myuser on >mypassword ~* +@all
+    ports:
+      - "6379:6379" 
+      
   categories-service:
     build: .
     container_name: categories-service
@@ -18,5 +19,4 @@ services:
     environment:
       REDIS_HOST: redis
       REDIS_PORT: 6379
-      REDIS_USERNAME: default
       REDIS_PASSWORD: mypassword
