@@ -1,3 +1,5 @@
+version: "3.9"
+
 services:
   redis:
     image: redis:7
@@ -7,11 +9,10 @@ services:
     volumes:
       - ./redis.conf:/usr/local/etc/redis/redis.conf
     command: redis-server /usr/local/etc/redis/redis.conf
-      
-  postgres:
+
+  postgres-master:
     image: postgres:16
-    container_name: postgres-db
-    restart: always
+    container_name: postgres-master
     environment:
       POSTGRES_USER: myuser
       POSTGRES_PASSWORD: mypassword
@@ -19,18 +20,42 @@ services:
     ports:
       - "5432:5432"
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - master_data:/var/lib/postgresql/data
+      - ./postgres/master/postgresql.conf:/etc/postgresql/postgresql.conf
+      - ./postgres/master/pg_hba.conf:/etc/postgresql/pg_hba.conf
+      - ./postgres/master/init.sql:/docker-entrypoint-initdb.d/init.sql
+    command: >
+      postgres
+      -c config_file=/etc/postgresql/postgresql.conf
+      -c hba_file=/etc/postgresql/pg_hba.conf
+
+
+  postgres-slave:
+    image: postgres:16
+    container_name: postgres-slave
+    depends_on:
+      - postgres-master
+    ports:
+      - "5433:5432"
+    volumes:
+      - slave_data:/var/lib/postgresql/data
+      - ./postgres/slave/setup.sh:/setup.sh
+    entrypoint: ["/bin/bash", "/setup.sh"]
+
+
 
   backend:
     build: .
     container_name: backend-api
-    restart: always
     ports:
       - "6001:6001"
     env_file:
       - .env
     depends_on:
-      - postgres
+      - redis
+      - postgres-master
+      - postgres-slave
 
 volumes:
-  postgres_data:
+  master_data:
+  slave_data:

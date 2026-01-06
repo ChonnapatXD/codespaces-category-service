@@ -4,7 +4,7 @@ require("dotenv").config();
 
 const db = require("./db");
 
-const pool = require("./db");
+const { readPool, writePool } = require("./db");
 const redis = require("./redisClient");
 
 const app = express();
@@ -23,7 +23,6 @@ app.use((req, res, next) => {
 app.get("/api/categories/:type", async (req, res) => {
   const { type } = req.params;
 
-  // ป้องกัน category แปลก ๆ
   if (!["main", "snack", "drink"].includes(type)) {
     return res.status(400).json({ message: "Invalid category" });
   }
@@ -31,22 +30,23 @@ app.get("/api/categories/:type", async (req, res) => {
   try {
     console.log(`🔥 GET category: ${type}`);
 
-    // 1. เช็ค Redis
+    // 1. Redis
     const cache = await redis.get(`menu:${type}`);
     if (cache) {
       console.log(`📦 Redis HIT: ${type}`);
       return res.json(JSON.parse(cache));
     }
 
-    console.log(`📝 Redis MISS → Query DB`);
+    console.log(`📝 Redis MISS → Query DB (SLAVE)`);
 
-    // 2. Query DB
-    const result = await pool.query(
+    // 2. Read from SLAVE
+    const result = await readPool.query(
       "SELECT id, name, price, image FROM menus WHERE category = $1 ORDER BY id",
       [type]
     );
+    console.log("DB RESULT:", result.rows);
 
-    // 3. เก็บ cache
+    // 3. Cache
     await redis.set(
       `menu:${type}`,
       JSON.stringify(result.rows),
@@ -62,13 +62,14 @@ app.get("/api/categories/:type", async (req, res) => {
 });
 
 
+
 app.get("/health", (req, res) => {
   res.json({ status: "OK", service: "category" });
 });
 
 app.get("/test-db", async (req, res) => {
   try {
-    const result = await db.query("SELECT NOW()");
+    const result = await writePool.query("SELECT NOW()");
     res.json(result.rows[0]);
   } catch (err) {
     console.error("DB ERROR:", err);
@@ -76,36 +77,27 @@ app.get("/test-db", async (req, res) => {
   }
 });
 
+
 app.listen(port, () => {
   console.log(`Category service running on port ${port}`);
 });
 
-app.get('/api/menumain/:id', (req, res) => {
-  const itemId = parseInt(req.params.id)
-  const item = menumain.find(item => item.id === itemId)
-  if (item) {
-    res.json(item)
-  } else {
-    res.status(404).json({message: 'Item not found'})
-  }
-})
+app.get("/api/menu/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
 
-app.get('/api/menusnack/:id', (req, res) => {
-  const itemId = parseInt(req.params.id)
-  const item = menusnack.find(item => item.id === itemId)
-  if (item) {
-    res.json(item)
-  } else {
-    res.status(404).json({message: 'Item not found'})
-  }
-})
+    const result = await readPool.query(
+      "SELECT id, name, price, image, category FROM menus WHERE id = $1",
+      [id]
+    );
 
-app.get('/api/menudrink/:id', (req, res) => {
-  const itemId = parseInt(req.params.id)
-  const item = menudrink.find(item => item.id === itemId)
-  if (item) {
-    res.json(item)
-  } else {
-    res.status(404).json({message: 'Item not found'})
+    if (result.rows.length === 0) {
+      return res.status(404).json({ message: "Item not found" });
+    }
+
+    res.json(result.rows[0]);
+  } catch (err) {
+    console.error("DB ERROR:", err);
+    res.status(500).json({ message: "Database error" });
   }
-})
+});

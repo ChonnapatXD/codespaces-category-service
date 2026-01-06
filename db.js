@@ -1,19 +1,32 @@
 const { Pool } = require("pg");
 
-const pool = new Pool({
-  host: process.env.DB_HOST,
-  port: process.env.DB_PORT,
-  user: process.env.DB_USER,
-  password: process.env.DB_PASSWORD,
-  database: process.env.DB_NAME,
+// WRITE → MASTER
+const writePool = new Pool({
+  connectionString: process.env.DATABASE_WRITE_URL,
 });
 
-pool.on("connect", () => {
-  console.log("✅ PostgreSQL connected");
+// READ → SLAVE
+const readPool = new Pool({
+  connectionString: process.env.DATABASE_READ_URL,
 });
 
-pool.on("error", (err) => {
-  console.error("❌ PostgreSQL error:", err);
+writePool.on("connect", () => {
+  console.log("✅ PostgreSQL MASTER connected");
 });
 
-module.exports = pool;
+readPool.on("connect", () => {
+  console.log("📖 PostgreSQL SLAVE connected");
+});
+
+writePool.on("error", (err) => {
+  console.error("❌ MASTER error:", err);
+});
+
+readPool.on("error", (err) => {
+  console.error("❌ SLAVE error:", err);
+});
+
+module.exports = {
+  writePool,
+  readPool,
+};
