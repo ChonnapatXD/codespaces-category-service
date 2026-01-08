@@ -55,6 +55,23 @@ services:
       - redis
       - postgres-master
       - postgres-slave
+      - pgbouncer
+
+  pgbouncer:
+    image: edoburu/pgbouncer
+    container_name: pgbouncer
+    depends_on:
+      - postgres-master
+      - postgres-slave
+    ports:
+      - "6432:5432"
+    volumes:
+      - ./pgbouncer/pgbouncer.ini:/etc/pgbouncer/pgbouncer.ini
+      - ./pgbouncer/userlist.txt:/etc/pgbouncer/userlist.txt
+    environment:
+      AUTH_TYPE: scram-sha-256
+
+
 
 volumes:
   master_data:

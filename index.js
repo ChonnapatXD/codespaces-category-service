@@ -2,7 +2,6 @@ const express = require("express");
 const cors = require("cors");
 require("dotenv").config();
 
-const db = require("./db");
 
 const { readPool, writePool } = require("./db");
 const redis = require("./redisClient");
