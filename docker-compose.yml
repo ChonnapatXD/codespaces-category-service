@@ -24,6 +24,7 @@ services:
       - ./postgres/master/postgresql.conf:/etc/postgresql/postgresql.conf
       - ./postgres/master/pg_hba.conf:/etc/postgresql/pg_hba.conf
       - ./postgres/master/init.sql:/docker-entrypoint-initdb.d/init.sql
+      - pg_master_data:/var/lib/postgresql/data
     command: >
       postgres
       -c config_file=/etc/postgresql/postgresql.conf
