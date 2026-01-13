@@ -1,2 +1,1 @@
-"myuser" "mypassword"
-"postgres" "postgrespassword"
+"postgres" "mypassword"

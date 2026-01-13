@@ -1,5 +1,4 @@
-import "dotenv/config";
-import { defineConfig } from "prisma/config";
+import { defineConfig } from "prisma";
 
 export default defineConfig({
   schema: "prisma/schema.prisma",
@@ -9,7 +8,7 @@ export default defineConfig({
   datasource: {
     db: {
       provider: "postgresql",
-      url: process.env.DATABASE_WRITE_URL, // ใช้ตัวแปรจาก .env
+      url: process.env.DATABASE_URL,
     },
   },
 });
