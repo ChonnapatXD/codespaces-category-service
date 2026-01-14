@@ -38,7 +38,7 @@ app.get("/api/categories/:type", async (req, res) => {
 
     // 2. DB (via PgBouncer → Patroni)
     const result = await pool.query(
-      "SELECT * FROM categories WHERE category = $1",
+      "SELECT id, name, price, image, category FROM menus WHERE category = $1",
       [type]
     );
 

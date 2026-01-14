@@ -17,12 +17,14 @@ services:
     env_file:
       - .env
     depends_on:
+      redis:
+        condition: service_started
       pgbouncer:
-      - pgbouncer
-      - redis
+        condition: service_healthy
     networks:
       - backend-net
-
+    command: npm start
+    
   pgbouncer:
     image: edoburu/pgbouncer
     container_name: pgbouncer
@@ -32,19 +34,18 @@ services:
       patroni2:
         condition: service_healthy
     ports:
-      - "6432:5432"
+      - "6432:6432"
     volumes:
       - ./pgbouncer/pgbouncer.ini:/etc/pgbouncer/pgbouncer.ini
       - ./pgbouncer/userlist.txt:/etc/pgbouncer/userlist.txt
-    environment:
-      AUTH_TYPE: plain
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -h 0.0.0.0 -p 5432 -U postgres"]
-      interval: 5s
+      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -p 6432 -U postgres -d postgres || exit 1"]
+      interval: 10s
       timeout: 5s
-      retries: 10
+      retries: 20
     networks:
       - backend-net
+
 
   etcd:
     image: gcr.io/etcd-development/etcd:v3.5.12
