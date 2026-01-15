@@ -77,8 +77,7 @@ services:
       REPLICATION_PASSWORD: replicatorpass
     volumes:
       - patroni1_data:/home/postgres/pgdata
-    ports:
-      - "5432:5432"
+    ports: []
     networks:             # <-- เพิ่มตรงนี้
       - backend-net
     healthcheck:
@@ -102,8 +101,7 @@ services:
       REPLICATION_PASSWORD: replicatorpass
     volumes:
       - patroni2_data:/home/postgres/pgdata
-    ports:
-      - "5433:5432"
+    ports: []
     networks:             # <-- เพิ่มตรงนี้
       - backend-net
     healthcheck:
